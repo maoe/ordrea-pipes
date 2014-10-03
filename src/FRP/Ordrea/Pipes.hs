@@ -3,6 +3,7 @@ module FRP.Ordrea.Pipes
   ) where
 import Control.Applicative
 import Control.Monad (forever)
+import Data.Monoid (mconcat)
 
 import FRP.Ordrea
 import Pipes
@@ -24,3 +25,20 @@ networkToPipe network = do
     go ext sample a = liftIO $ do
       triggerExternalEvent ext a
       sample
+
+-- | Convert a pipe to an ordrea event network.
+pipeToNetwork
+  :: Pipe a b IO ()
+  -> Event a
+  -> SignalGen (Event b)
+pipeToNetwork pipe ev = do
+  outputEvent <- liftIO newExternalEvent
+  pipeE <- generatorE $ go outputEvent <$> ev
+  outputE <- externalE outputEvent
+  return $ justE $ mconcat
+    [ Nothing <$ pipeE
+    , Just <$> outputE
+    ]
+  where
+    go ext a = liftIO $ runEffect $
+      yield a >-> pipe >-> for cat (lift . triggerExternalEvent ext)
