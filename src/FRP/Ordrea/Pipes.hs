@@ -1,5 +1,6 @@
 module FRP.Ordrea.Pipes
   ( networkToPipe
+  , pipeToNetwork
   ) where
 import Control.Applicative
 import Control.Monad (forever)
